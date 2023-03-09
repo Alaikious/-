@@ -14,8 +14,8 @@ var (
 
 func init() {
 	//	// Db, err = gorm.Open(mysql.Open("root:L_1q2w3e4r@tcp(localhost)/datascs"))
-	//Db, err = gorm.Open(mysql.Open("root:password@tcp(8.130.52.233)/datascs"))
-	Db, err = gorm.Open(mysql.Open("root:12345678910@tcp(47.96.134.75)/datascs"))
+	Db, err = gorm.Open(mysql.Open("root:password@tcp(localhost)/datascs"))
+	//Db, err = gorm.Open(mysql.Open("root:12345678910@tcp(47.96.134.75)/datascs"))
 
 	if err != nil {
 		fmt.Println(err)
