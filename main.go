@@ -15,7 +15,7 @@ func main() {
 	router.GET("/api/getApplyScoreRules", api.GetApplyScoreRules)
 	router.GET("/api/square/getTopics", api.TopicGet)
 	router.GET("/api/square/topic/:id", api.TopicAllGet)
-	router.GET("/api/coach/submitScores", api.SubmitScores)
+	router.POST("/api/coach/submitScores", api.SubmitScores)
 	router.GET("/api/coach/getRejectReasons", api.GetRejectReasons)
 	router.POST("/api/coach/submitRejectReasons", api.SubmitRejectReasons)
 	router.GET("/api/coach/getApplyList", api.GetApplyList)
@@ -30,7 +30,9 @@ func main() {
 	router.POST("/api/student/submitAdvice", api.SubmitAdvice)
 	router.POST("/api/student/submitComplain", api.SubmitComplain)
 	router.GET("/api/coach/scores/query", api.Query)
-	router.GET("/api/coach/queryStudent", api.QueryStudent)
+	router.GET("/api/coach/queryStudent/:username", api.QueryStudent)
+	router.GET("/api/coach/queryStudentScores", api.QueryStudentScores)
+	router.GET("/api/coach/advice", api.GetSuggest)
 	err := router.Run(":8080")
 	if err != nil {
 		return

@@ -9,45 +9,50 @@ import (
 
 func GetMyScores(ctx *gin.Context) {
 	var user = GetUsername(ctx)
-	countEntityI := make([]model.CountEntity, 100)
-	utils.Db.Where("countid=?", user.Countid).Find(&countEntityI)
-	var son [100]model.CountEntity
-	for i := 0; i < len(countEntityI); i++ {
-		countEntityII := make([]model.CountEntity, 100)
-		for j := 0; j < len(countEntityI); j++ {
-			if countEntityI[j].Realindex-countEntityI[i].Realindex > 0 && countEntityI[j].Realindex-countEntityI[i].Realindex < 10 {
-				countEntityII = append(countEntityII, countEntityI[j])
+	var countEntityI []model.CountEntity
+	year := ctx.Query("year")
+	utils.Db.Where("countid=? AND teamyear=?", user.Countid, year).Find(&countEntityI)
+	/*
+		var son [100]model.CountEntity
+		for i := 0; i < len(countEntityI); i++ {
+			countEntityII := make([]model.CountEntity, 100)
+			for j := 0; j < len(countEntityI); j++ {
+				if countEntityI[j].Realindex-countEntityI[i].Realindex > 0 && countEntityI[j].Realindex-countEntityI[i].Realindex < 10 {
+					countEntityII = append(countEntityII, countEntityI[j])
+				}
 			}
-		}
-		for j := 0; j < len(countEntityII); j++ { //去除错误切片
-			if countEntityII[j].Realindex == 0 {
-				countEntityII = append(countEntityII[:j], countEntityII[j+1:]...)
-				j--
+			for j := 0; j < len(countEntityII); j++ { //去除错误切片
+				if countEntityII[j].Realindex == 0 {
+					countEntityII = append(countEntityII[:j], countEntityII[j+1:]...)
+					j--
+				}
 			}
+			son[i].List = countEntityII
 		}
-		son[i].List = countEntityII
-	}
-	for i := 0; i < len(countEntityI); i++ {
-		countEntityI[i].List = son[i].List
-	}
+		for i := 0; i < len(countEntityI); i++ {
+			countEntityI[i].List = son[i].List
+		}
 
-	for i := 0; i < len(countEntityI); i++ { //去除错误切片
-		if countEntityI[i].Realindex%10 != 0 || countEntityI[i].Realindex == 0 {
-			countEntityI = append(countEntityI[:i], countEntityI[i+1:]...)
-			i--
+		for i := 0; i < len(countEntityI); i++ { //去除错误切片
+			if countEntityI[i].Realindex%10 != 0 || countEntityI[i].Realindex == 0 {
+				countEntityI = append(countEntityI[:i], countEntityI[i+1:]...)
+				i--
+			}
 		}
-	}
+
+	*/
 	utils.Success(ctx, gin.H{
-		"score": countEntityI,
+		"list": countEntityI,
 	})
 	return
 }
 
 func QueryOthersScore(ctx *gin.Context) {
 	var id = ctx.Query("target")
+	var user model.AccountEntity
 	countEntityI := make([]model.CountEntity, 10)
 	utils.Db.Where("countid=?", id).Find(&countEntityI)
-	println(countEntityI[0].Realindex)
+	utils.Db.Where("countid=?", id).Find(&user)
 	var all float64
 	all = 0
 	for i := 0; i < len(countEntityI); i++ {
@@ -57,12 +62,13 @@ func QueryOthersScore(ctx *gin.Context) {
 
 	utils.Success(ctx, gin.H{
 		"score": all,
+		"name":  user.Username,
 	})
 	return
 }
 
 type Coach struct {
-	Coachmame string `json:"mame"`
+	Coachmame string `json:"name"`
 	Coachid   string `json:"id"`
 }
 
@@ -73,7 +79,7 @@ func GetMyCoaches(ctx *gin.Context) {
 	var coachI []Coach
 	println("学号为", user.Countid)
 	var coach [5]model.AccountEntity
-	utils.Db.Where("coachid=?", user.Countid).Find(&coach)
+	utils.Db.Where("countid=?", user.Coachid).Find(&coach)
 
 	for i := 0; i < 5; i++ {
 		var ccc Coach
@@ -91,6 +97,21 @@ func GetMyCoaches(ctx *gin.Context) {
 		"list": coachI,
 	})
 	return
+}
+
+type RecordSendEntity struct {
+	Id       int64     `json:"id"`
+	Complain *string   `json:"complain"`     // 申诉内容
+	Content  model.Tag `json:"content"`      // 文字描述
+	Files    model.Tag `json:"files"`        // 图片地址数组
+	Countid  string    `json:"username"`     // 申报id
+	Index    string    `json:"index"`        // 申报项目代号，通过层级组合生成; `v-2-2`表示**德育素质-纪实加减分-社会责任记实分**; `v-1`表示**德育素质-基本评定分**
+	Label    string    `json:"label"`        // 中文名
+	Reason   *string   `json:"rejectReason"` // 驳回理由
+	State    string    `json:"state"`        // 状态
+	Time     string    `json:"time"`         // 申报时间
+	Value    float32   `json:"value"`        // 分数
+	Target   string    `json:"target"`
 }
 
 func GetMyApplyHistory(ctx *gin.Context) {
@@ -114,13 +135,29 @@ func GetApplyItemList(ctx *gin.Context) {
 
 type Account struct {
 	Files   model.Tag `json:"files"` // 图片地址数组
-	Value   string    `json:"value"` // 分数
-	Index   string    `json:"name"`
-	Content string    `json:"content"`
+	Value   float32   `json:"value"` // 分数
+	Index   string    `json:"index"`
+	Content model.Tag `json:"contents"`
+	Target  string    `json:"target"`
+	Year    string    `json:"year"`
 }
 
 // ApplyScore todo 修改模型格式
 
+/*
+	type Form struct {
+		Value map[string][]string
+		File  map[string][]*FileHeader
+	}
+
+	type FileHeader struct {
+		Filename string
+		Header   textproto.MIMEHeader
+		Size     int64
+		content []byte
+		tmpfile string
+	}
+*/
 func ApplyScore(ctx *gin.Context) {
 	var account Account
 
@@ -130,19 +167,29 @@ func ApplyScore(ctx *gin.Context) {
 		return
 	}
 
-	val, _ := strconv.Atoi(account.Value)
 	neww := model.RecordEntity{
-		Value:   int64(val),
+		Value:   account.Value,
 		Content: account.Content,
 		Index:   account.Index,
 		Files:   account.Files,
+		Target:  account.Target,
+		Year:    account.Year,
 	}
 	neww.Time = times()
-	var bee model.RecordEntity
-	utils.Db.Where("index=?", neww.Index).First(&bee)
-	neww.Label = bee.Label
+	for i := 0; i < (len(neww.Index)+1)/2; i++ {
+		var bee model.CountModelEntity
+		utils.Db.Where("`index`=?", neww.Index[0:i*2+1]).Find(&bee)
+		if i == 0 {
+			neww.Label += bee.Label
+			println(neww.Label)
+		}
+		if i != 0 {
+			neww.Label += "-" + bee.Label
+			println(neww.Label)
+		}
+	}
 	neww.State = "pending" //todo 确认状态
-	neww.CountID = user.Countid
+	neww.Countid = user.Countid
 	utils.Db.Create(&neww)
 	var newnew model.RecordEntity
 	utils.Db.Where("time=?", neww.Time).First(&newnew)
@@ -166,7 +213,7 @@ func SubmitComplain(ctx *gin.Context) {
 	var newnew model.RecordEntity
 	val, _ := strconv.Atoi(reAccount.Id)
 	utils.Db.Where("id=?", val).First(&newnew)
-	newnew.Content = reAccount.Content
+	newnew.Complain = reAccount.Content
 	newnew.Time = times()
 	newnew.State = "complain"
 	utils.Db.Where("id=?", val).Updates(&newnew)
@@ -176,7 +223,7 @@ func SubmitComplain(ctx *gin.Context) {
 
 type SuggestDto struct {
 	Content string `json:"content"` // 建议内容
-	IsAnon  string `json:"isAnon"`  // 是否匿名
+	IsAnon  bool   `json:"isAnon"`  // 是否匿名
 	Target  string `json:"target"`  // 辅导员工号
 }
 
@@ -187,13 +234,17 @@ func SubmitAdvice(ctx *gin.Context) {
 		utils.Fail(ctx, "请求参数错误")
 		return
 	}
-	if suggest.IsAnon == "true" {
+	if user.Coachid != suggest.Target {
+		utils.Fail(ctx, "你没有这个辅导员")
+		return
+	}
+	if suggest.IsAnon != true {
 		abc := model.SuggestEntity{
 			Content: suggest.Content,
 			Target:  suggest.Target,
 			Countid: user.Countid,
 		}
-		utils.Db.Create(abc)
+		utils.Db.Create(&abc)
 		utils.Success1(ctx)
 		return
 	}
@@ -201,7 +252,7 @@ func SubmitAdvice(ctx *gin.Context) {
 		Content: suggest.Content,
 		Target:  suggest.Target,
 	}
-	utils.Db.Create(abc)
+	utils.Db.Create(&abc)
 	utils.Success1(ctx)
 	return
 }

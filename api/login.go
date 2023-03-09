@@ -14,6 +14,11 @@ type LoginDto struct {
 	Role     string `json:"role"` // 身份
 }
 
+type RoleJs struct {
+	Username string `json:"username"`
+	Name     string `json:"name"`
+}
+
 // Login countid为学号
 func Login(ctx *gin.Context) {
 	var loginDto LoginDto
@@ -32,7 +37,7 @@ func Login(ctx *gin.Context) {
 		return
 	}
 	if accountEntity.Role != loginDto.Role {
-		utils.Fail(ctx, "身份错误")
+		utils.Fail(ctx, "无此用户")
 		return
 	}
 
@@ -53,13 +58,16 @@ func Login(ctx *gin.Context) {
 
 	var session model.Sessions
 	utils.Db.Debug().Where("countid=?", loginDto.Username).First(&session)
+	var user = RoleJs{
+		Username: accountEntity.Countid,
+		Name:     accountEntity.Username,
+	}
 
 	utils.Success(ctx, gin.H{
-		"name":  accountEntity.Username,
+		"user":  user,
 		"token": session.Session,
 	})
-	println()
-	println("成功账号cookie", session.Session)
+
 	cookieToken := http.Cookie{Name: "sms-session", Value: session.Session, Path: "/", MaxAge: 86400}
 	http.SetCookie(ctx.Writer, &cookieToken)
 	/*这个不行
@@ -92,30 +100,36 @@ func Login(ctx *gin.Context) {
 
 func LoginCookie(ctx *gin.Context) {
 	var session model.Sessions
-	val, _ := ctx.Cookie("sms-session")
-	utils.Db.Debug().Where("session=?", val).First(&session)
-	println("获取数据库cookie:", session.Session)
-	println("获取网页cookie值", val)
+	val := ctx.GetHeader("Authorization")
+	utils.Db.Where("session=?", val).First(&session)
 	if session.Username == "" {
-		utils.Fail(ctx, "fail for wrong cookie")
+		//	utils.Fail(ctx, "fail for wrong cookie")
+		return
 	}
+	var users model.AccountEntity
+	if utils.Db.Where("username=?", session.Username).First(&users).Error != nil {
+		//	utils.Fail(ctx, "error adapted user")
+		return
+	}
+	var user = RoleJs{
+		Username: users.Countid,
+		Name:     users.Username,
+	}
+
 	utils.Success(ctx, gin.H{
-		"role": session.Role,
-		"name": session.Username,
+		"user": user,
+		"role": users.Role,
 	})
 	return
 }
 
 func GetUsername(ctx *gin.Context) model.AccountEntity { //用session返回用户本体
 	var session model.Sessions
-	val, _ := ctx.Cookie("sms-session")
+	val := ctx.GetHeader("Authorization")
+	println(val)
 	if utils.Db.Where("session=?", val).First(&session).Error != nil {
-		utils.Fail(ctx, "error adopted cookie")
 	}
 	var user model.AccountEntity
-	if utils.Db.Where("username=?", session.Username).First(&user).Error != nil {
-		utils.Fail(ctx, "error adapted user")
-	}
 	utils.Db.Where("username=?", session.Username).First(&user)
 	return user
 }

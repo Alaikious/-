@@ -37,7 +37,7 @@ func GenerateToken(u HmacUser) (string, error) {
 			ExpiresAt: expirationTime.Unix(), // 过期时间
 			IssuedAt:  time.Now().Unix(),     // 发布时间
 			Subject:   "token",               // 主题
-			Issuer:    "水痕",                  // 发布者
+			Issuer:    "雅罗戈耳刻国王",             // 发布者
 		},
 	}
 	// 注意单词别写错了

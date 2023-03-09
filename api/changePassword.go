@@ -17,12 +17,14 @@ func ChangePassword(ctx *gin.Context) {
 		return
 	}
 	var abc = GetUsername(ctx)
-	abc.Password = newPassword.New
-	utils.Db.Where("username=?", abc.Username).Updates(abc)
+
 	if abc.Password != newPassword.Old {
 		utils.Fail(ctx, "密码错误")
 		return
 	}
+	abc.Password = newPassword.New
+	utils.Db.Where("username=?", abc.Username).Updates(abc)
+
 	/*
 		println(newPassword.Old + " is old")
 		var cookie model.Cookie

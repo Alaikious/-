@@ -38,8 +38,9 @@ func (t *LocalTime) Scan(v interface{}) error {
 
 type BaseEntity struct {
 	// 重写id字段
-	Id        int64          `json:"id" gorm:"id;primaryKey;autoIncrement;comment:主键id"`
-	CreatedAt LocalTime      `json:"createdAt" gorm:"created_at;comment:创建时间;"`
-	UpdatedAt LocalTime      `json:"updatedAt" gorm:"updated_at;comment:更新时间"`
+	Id        int64     `json:"id" gorm:"id;primaryKey;autoIncrement;comment:主键id"`
+	CreatedAt LocalTime `json:"createdAt" gorm:"created_at;comment:创建时间;"`
+	//UpdatedAt LocalTime      `json:"updatedAt" gorm:"updated_at;comment:更新时间"`
+	//update的莫名其妙bug
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"deleted_at;comment:删除时间"` // 查询这个字段但是不返回这个字段
 }
